@@ -1,0 +1,22 @@
+jenkins:
+  systemMessage: "Welcome to the Self-Service Jenkins Platform!"
+  numExecutors: 2
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+  remotingSecurity:
+    enabled: true
+unclassified:
+  location:
+    adminAddress: "admin@example.com"
+    url: "http://localhost:8080/"
