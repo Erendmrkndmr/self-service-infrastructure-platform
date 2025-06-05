@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Provision Environment</title>
+</head>
+<body>
+  <h1>Create a New Environment</h1>
+  <form action="/provision" method="post">
+    <label for="template">Template:</label>
+    <select name="template" required>
+      <option value="web">Web Server</option>
+      <option value="db">Database</option>
+      <option value="fullstack">Full Stack</option>
+    </select><br><br>
+
+    <label for="env_name">Environment Name:</label>
+    <input type="text" name="env_name" required><br><br>
+
+    <label for="size">Size:</label>
+    <select name="size" required>
+      <option value="small">Small</option>
+      <option value="medium">Medium</option>
+      <option value="large">Large</option>
+    </select><br><br>
+
+    <label for="expire_date">Expire Date:</label>
+    <input type="date" name="expire_date" required><br><br>
+
+    <button type="submit">Provision</button>
+  </form>
+</body>
+</html>
