@@ -1,0 +1,73 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1540.v295eccc9778f">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>ENVIRONMENT</name>
+          <description>Deployment environment</description>
+          <defaultValue>test</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>USERNAME</name>
+          <description>User who triggered provisioning</description>
+          <defaultValue>user</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DELETE_AFTER_DAYS</name>
+          <description>Auto delete after X days</description>
+          <defaultValue>3</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4183.v94b_6fd39da_c1">
+    <script>
+        pipeline {
+          agent any
+          environment {
+            GIT_REPO_URL = &apos;https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&apos;
+            GIT_BRANCH = &apos;main&apos;
+          }
+          stages {
+            stage(&apos;Clone Repo&apos;) {
+              steps {
+                sh &apos;rm -rf self-service-infrastructure-platform&apos;
+                sh &quot;git clone --branch main https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&quot;
+                dir(&apos;self-service-infrastructure-platform&apos;) {
+                  sh &apos;ls -la&apos;
+                }
+              }
+            }
+            stage(&apos;Deploy Web&apos;) {
+              steps {
+                dir(&apos;self-service-infrastructure-platform&apos;) {
+                  echo &quot;Deploying to environment: &quot;
+                  echo &quot;Provisioned by: &quot;
+                  echo &quot;Will auto-delete after  days&quot;
+                  sh &apos;ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml&apos;
+                }
+              }
+            }
+          }
+        }
+      </script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

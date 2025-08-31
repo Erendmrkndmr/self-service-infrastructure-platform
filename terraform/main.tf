@@ -118,7 +118,7 @@ resource "aws_security_group" "env_sg" {
 resource "aws_instance" "env" {
   ami                    = var.ami_id
   instance_type          = local.instance_type
-  key_name               = "erdemir-paris-key"
+  key_name               = var.key_name
   subnet_id              = aws_subnet.main.id
   vpc_security_group_ids = [aws_security_group.env_sg.id]
   associate_public_ip_address = true

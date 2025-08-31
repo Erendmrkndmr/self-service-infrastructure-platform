@@ -1,0 +1,10 @@
+[
+  {
+    "env_name": "erdemir-test1",
+    "template": "web",
+    "size": "small",
+    "expire_date": "2025-09-01",
+    "status": "triggered",
+    "created_at": "2025-08-31T15:39:59.916648"
+  }
+]

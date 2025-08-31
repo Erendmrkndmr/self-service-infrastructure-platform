@@ -1,33 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Provision Environment</title>
-</head>
-<body>
-  <h1>Create a New Environment</h1>
-  <form action="/provision" method="post">
-    <label for="template">Template:</label>
-    <select name="template" required>
-      <option value="web">Web Server</option>
-      <option value="db">Database</option>
-      <option value="fullstack">Full Stack</option>
-    </select><br><br>
+<form action="/provision" method="post">
+  <label for="provision_type">Select Resource:</label>
+  <select id="provision_type" name="provision_type" required>
+    <option value="web">Web Server</option>
+    <option value="db">Database</option>
+  </select>
 
-    <label for="env_name">Environment Name:</label>
-    <input type="text" name="env_name" required><br><br>
+  <label for="environment_name">Environment:</label>
+  <input type="text" id="environment_name" name="environment_name" placeholder="test, prod, non-prod" required>
 
-    <label for="size">Size:</label>
-    <select name="size" required>
-      <option value="small">Small</option>
-      <option value="medium">Medium</option>
-      <option value="large">Large</option>
-    </select><br><br>
+  <label for="duration">Time to Live (days):</label>
+  <input type="number" id="duration" name="duration" min="1" max="7" required>
 
-    <label for="expire_date">Expire Date:</label>
-    <input type="date" name="expire_date" required><br><br>
-
-    <button type="submit">Provision</button>
-  </form>
-</body>
-</html>
+  <button type="submit">Provision</button>
+</form>

@@ -1,0 +1,23 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ENV_TYPE', choices: ['web', 'db', 'fullstack'], description: 'Hangi ortam kurulacak?')
+    }
+
+    stages {
+        stage('Seçilen Ortamı Kur') {
+            steps {
+                script {
+                    if (params.ENV_TYPE == 'web') {
+                        sh 'ansible-playbook playbooks/web.yml -i inventory.ini'
+                    } else if (params.ENV_TYPE == 'db') {
+                        sh 'ansible-playbook playbooks/db.yml -i inventory.ini'
+                    } else if (params.ENV_TYPE == 'fullstack') {
+                        sh 'ansible-playbook playbooks/fullstack.yml -i inventory.ini'
+                    }
+                }
+            }
+        }
+    }
+}

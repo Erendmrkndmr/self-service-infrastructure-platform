@@ -2,21 +2,115 @@ jenkins:
   systemMessage: "Welcome to the Self-Service Jenkins Platform!"
   numExecutors: 2
   mode: NORMAL
+
   securityRealm:
     local:
       allowsSignup: false
       users:
-        - id: "${JENKINS_ADMIN_ID}"
-          password: "${JENKINS_ADMIN_PASSWORD}"
+        - id: "admin"
+          password: "admin"
+
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
+
   crumbIssuer:
     standard:
       excludeClientIPFromCrumb: true
+
   remotingSecurity:
     enabled: true
+
 unclassified:
   location:
     adminAddress: "admin@example.com"
     url: "http://localhost:8080/"
+
+jobs:
+  - script: >
+      pipelineJob('deploy-web') {
+        parameters {
+          stringParam('ENVIRONMENT', 'test', 'Deployment environment')
+          stringParam('USERNAME', 'user', 'User who triggered provisioning')
+          stringParam('DELETE_AFTER_DAYS', '3', 'Auto delete after X days')
+        }
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                environment {
+                  GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
+                  GIT_BRANCH = 'main'
+                }
+                stages {
+                  stage('Clone Repo') {
+                    steps {
+                      sh 'rm -rf self-service-infrastructure-platform'
+                      sh "git clone --branch main https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git"
+                      dir('self-service-infrastructure-platform') {
+                        sh 'ls -la'
+                      }
+                    }
+                  }
+                  stage('Deploy Web') {
+                    steps {
+                      dir('self-service-infrastructure-platform') {
+                        echo "Deploying to environment: ${params.ENVIRONMENT}"
+                        echo "Provisioned by: ${params.USERNAME}"
+                        echo "Will auto-delete after ${params.DELETE_AFTER_DAYS} days"
+                        sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml'
+                      }
+                    }
+                  }
+                }
+              }
+            """)
+            sandbox()
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('deploy-db') {
+        parameters {
+          stringParam('ENVIRONMENT', 'test', 'Deployment environment')
+          stringParam('USERNAME', 'user', 'User who triggered provisioning')
+          stringParam('DELETE_AFTER_DAYS', '3', 'Auto delete after X days')
+        }
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                environment {
+                  GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
+                  GIT_BRANCH = 'main'
+                }
+                stages {
+                  stage('Clone Repo') {
+                    steps {
+                      sh 'rm -rf self-service-infrastructure-platform'
+                      sh "git clone --branch ${env.GIT_BRANCH} ${env.GIT_REPO_URL}"
+                      dir('self-service-infrastructure-platform') {
+                        sh 'ls -la'
+                      }
+                    }
+                  }
+                  stage('Deploy DB') {
+                    steps {
+                      dir('self-service-infrastructure-platform') {
+                        echo "Deploying DB to: ${params.ENVIRONMENT}"
+                        echo "Provisioned by: ${params.USERNAME}"
+                        echo "Will auto-delete after ${params.DELETE_AFTER_DAYS} days"
+                        sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml'
+                      }
+                    }
+                  }
+                }
+              }
+            """)
+            sandbox()
+          }
+        }
+      }
