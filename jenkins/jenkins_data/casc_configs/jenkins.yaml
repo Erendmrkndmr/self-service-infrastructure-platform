@@ -1,0 +1,70 @@
+jenkins:
+  systemMessage: "Welcome to the Self-Service Jenkins Platform!"
+  numExecutors: 2
+  mode: NORMAL
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "admin"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+
+  remotingSecurity:
+    enabled: true
+
+unclassified:
+  location:
+    adminAddress: "admin@example.com"
+    url: "http://localhost:8080/"
+
+jobs:
+  - script: >
+      pipelineJob('deploy-web') {
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                stages {
+                  stage('Deploy Web') {
+                    steps {
+                      sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml'
+                    }
+                  }
+                }
+              }
+            """)
+            sandbox()
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('deploy-db') {
+        definition {
+          cps {
+            script("""
+              pipeline {
+                agent any
+                stages {
+                  stage('Deploy DB') {
+                    steps {
+                      sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml'
+                    }
+                  }
+                }
+              }
+            """)
+            sandbox()
+          }
+        }
+      }

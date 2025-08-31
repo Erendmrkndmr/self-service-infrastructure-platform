@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><flow-definition>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                    <name>ENVIRONMENT</name>
+                    <defaultValue>test</defaultValue>
+                    <description>Deployment environment</description>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>USERNAME</name>
+                    <defaultValue>user</defaultValue>
+                    <description>User who triggered provisioning</description>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>DELETE_AFTER_DAYS</name>
+                    <defaultValue>3</defaultValue>
+                    <description>Auto delete after X days</description>
+                </hudson.model.StringParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <triggers/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
+        <script>
+        pipeline {
+          agent any
+          environment {
+            GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
+            GIT_BRANCH = 'main'
+          }
+          stages {
+            stage('Clone Repo') {
+              steps {
+                sh 'rm -rf self-service-infrastructure-platform'
+                sh "git clone --branch  "
+                dir('self-service-infrastructure-platform') {
+                  sh 'ls -la'
+                }
+              }
+            }
+            stage('Deploy DB') {
+              steps {
+                dir('self-service-infrastructure-platform') {
+                  echo "Deploying DB to: "
+                  echo "Provisioned by: "
+                  echo "Will auto-delete after  days"
+                  sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml'
+                }
+              }
+            }
+          }
+        }
+      </script>
+        <sandbox>true</sandbox>
+    </definition>
+</flow-definition>
