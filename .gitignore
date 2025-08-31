@@ -8,7 +8,7 @@ keys/
 *.tfstate.backup
 terraform.tfvars
 .terraform/
-
+.env.bak
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
