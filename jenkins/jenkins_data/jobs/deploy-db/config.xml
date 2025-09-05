@@ -6,6 +6,11 @@
         <hudson.model.ParametersDefinitionProperty>
             <parameterDefinitions>
                 <hudson.model.StringParameterDefinition>
+                    <name>HOST_IP</name>
+                    <defaultValue/>
+                    <description>Target host IP (Terraform output)</description>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
                     <name>ENVIRONMENT</name>
                     <defaultValue>test</defaultValue>
                     <description>Deployment environment</description>
@@ -26,31 +31,50 @@
     <triggers/>
     <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
         <script>
-        pipeline {
-          agent any
-          environment {
-            GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
-            GIT_BRANCH = 'main'
-          }
-          stages {
-            stage('Clone Repo') {
-              steps {
-                sh 'rm -rf self-service-infrastructure-platform'
-                sh "git clone --branch  "
-                dir('self-service-infrastructure-platform') {
-                  sh 'ls -la'
-                }
-              }
+        node {
+          properties([parameters([
+            string(name: "HOST_IP", defaultValue: "", description: "Target host IP (Terraform output)"),
+            string(name: "ENVIRONMENT", defaultValue: "test", description: "Deployment environment"),
+            string(name: "USERNAME", defaultValue: "user", description: "User who triggered provisioning"),
+            string(name: "DELETE_AFTER_DAYS", defaultValue: "3", description: "Auto delete after X days")
+          ])])
+
+          def GIT_REPO_URL = "https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git"
+          def GIT_BRANCH   = "main"
+
+          def SSH_USER     = env.SSH_USER ?: "ubuntu"
+          def SSH_KEY_PATH = env.JENKINS_SSH_KEY_PATH ?: "/var/jenkins_home/keys/erdemir-paris-key.pem"
+
+          stage("Echo Params &amp; Guard") {
+            echo "HOST_IP="
+            echo "ENVIRONMENT="
+            echo "USERNAME="
+            echo "DELETE_AFTER_DAYS="
+            if (!params.HOST_IP?.trim()) {
+              error("HOST_IP parametresi boş. Bu job portal tarafından IP ile tetiklenmeli veya Build with Parameters ile dolu gönderilmelidir.")
             }
-            stage('Deploy DB') {
-              steps {
-                dir('self-service-infrastructure-platform') {
-                  echo "Deploying DB to: "
-                  echo "Provisioned by: "
-                  echo "Will auto-delete after  days"
-                  sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml'
-                }
-              }
+          }
+
+          stage("Clone Repo") {
+            sh """#!/bin/bash -e
+              rm -rf self-service-infrastructure-platform
+              git clone --branch "" ""
+            """
+          }
+
+          stage("Prepare Inventory") {
+            dir("self-service-infrastructure-platform") {
+              sh "mkdir -p ansible/inventory"
+              writeFile file: "ansible/inventory/inventory.ini", text: """[web]  ansible_user= ansible_ssh_private_key_file= ansible_ssh_common_args='-o StrictHostKeyChecking=no' """
+              sh "chmod 0644 ansible/inventory/inventory.ini"
+              sh "echo '---- inventory.ini ----'; cat ansible/inventory/inventory.ini"
+            }
+          }
+
+          stage("Deploy DB") {
+            dir("self-service-infrastructure-platform") {
+              sh "ansible --version"
+              sh "ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml"
             }
           }
         }

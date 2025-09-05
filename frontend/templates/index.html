@@ -1,15 +1,94 @@
-<form action="/provision" method="post">
-  <label for="provision_type">Select Resource:</label>
-  <select id="provision_type" name="provision_type" required>
-    <option value="web">Web Server</option>
-    <option value="db">Database</option>
-  </select>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Self-Service Provisioning</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      max-width: 400px;
+    }
+    label {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select, button {
+      padding: 8px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    #log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Provision an Environment</h1>
+  <form>
+    <label for="resource">Select Resource:</label>
+    <select id="resource" name="provision_type" required>
+      <option value="web">Web Server</option>
+      <option value="db">Database</option>
+    </select>
 
-  <label for="environment_name">Environment:</label>
-  <input type="text" id="environment_name" name="environment_name" placeholder="test, prod, non-prod" required>
+    <label for="env">Environment Name:</label>
+    <input type="text" id="env" name="env_name" placeholder="test, prod, non-prod" required>
 
-  <label for="duration">Time to Live (days):</label>
-  <input type="number" id="duration" name="duration" min="1" max="7" required>
+    <label for="ttl">Time to Live (days):</label>
+    <input type="number" id="ttl" name="duration" min="1" max="7" required>
 
-  <button type="submit">Provision</button>
-</form>
+    <button type="submit">Provision</button>
+  </form>
+
+  <!-- Durum log alanı -->
+  <div id="log">Henüz işlem yapılmadı.</div>
+
+  <!-- Script: form submit ve polling -->
+  <script>
+    const form = document.querySelector('form');
+    const log = document.getElementById('log');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const env = fd.get('env_name');
+
+      log.textContent = "Provisioning başladı...";
+
+      try {
+        const res = await fetch('/provision', { method:'POST', body: fd });
+        log.textContent = await res.text();
+      } catch (err) {
+        log.textContent = "Provisioning başlatılamadı: " + err;
+        return;
+      }
+
+      // basit polling
+      const iv = setInterval(async ()=>{
+        const r = await fetch(`/status/${env}`);
+        if (r.ok) {
+          const s = await r.json();
+          log.textContent = `[${s.status}] ${s.last_message} (IP: ${s.public_ip || '-'})`;
+          if (s.status === "completed" || s.status === "failed") {
+            clearInterval(iv);
+          }
+        }
+      }, 5000);
+    });
+  </script>
+</body>
+</html>

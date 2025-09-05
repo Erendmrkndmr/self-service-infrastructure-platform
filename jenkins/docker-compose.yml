@@ -9,6 +9,8 @@ services:
       - "8080:8080"
     volumes:
       - ./jenkins_data:/var/jenkins_home
+      - ./keys:/var/jenkins_home/keys:ro
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
       - CASC_JENKINS_CONFIG=/usr/share/jenkins/ref/casc_configs/jenkins.yaml
+      - JENKINS_SSH_KEY_PATH=/var/jenkins_home/keys/erdemir-paris-key.pem

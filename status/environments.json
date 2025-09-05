@@ -6,5 +6,102 @@
     "expire_date": "2025-09-01",
     "status": "triggered",
     "created_at": "2025-08-31T15:39:59.916648"
+  },
+  {
+    "env_name": "name",
+    "template": "web",
+    "size": "small",
+    "ttl_days": "1",
+    "status": "provisioned",
+    "public_ip": "52.47.134.190",
+    "created_at": "2025-09-01T22:02:12.956076"
+  },
+  {
+    "env_name": "name22",
+    "created_at": "2025-09-01T19:27:20.633134+00:00",
+    "updated_at": "2025-09-01T19:28:10.338920+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-02T19:27:20.632318+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 15.236.99.232)",
+    "public_ip": "15.236.99.232"
+  },
+  {
+    "env_name": "deneme",
+    "created_at": "2025-09-01T20:11:58.543699+00:00",
+    "updated_at": "2025-09-01T20:12:46.441173+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-02T20:11:58.542944+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 13.36.8.251)",
+    "public_ip": "13.36.8.251"
+  },
+  {
+    "env_name": "test",
+    "created_at": "2025-09-01T20:18:01.065162+00:00",
+    "updated_at": "2025-09-01T20:18:51.663412+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-02T20:18:01.064855+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 15.236.61.247)",
+    "public_ip": "15.236.61.247"
+  },
+  {
+    "env_name": "sondeneme",
+    "created_at": "2025-09-01T20:41:38.488583+00:00",
+    "updated_at": "2025-09-01T20:42:25.123749+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-02T20:41:38.487680+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 15.236.230.150)",
+    "public_ip": "15.236.230.150"
+  },
+  {
+    "env_name": "deneme05",
+    "created_at": "2025-09-04T21:18:24.301000+00:00",
+    "updated_at": "2025-09-04T21:19:46.114517+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-05T21:18:24.300383+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 13.39.31.68)",
+    "public_ip": "13.39.31.68"
+  },
+  {
+    "env_name": "test-erdemir-05sep",
+    "created_at": "2025-09-04T21:26:08.436546+00:00",
+    "updated_at": "2025-09-04T21:27:08.187536+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-05T21:26:08.435763+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 35.180.157.128)",
+    "public_ip": "35.180.157.128"
+  },
+  {
+    "env_name": "test1",
+    "created_at": "2025-09-04T21:42:17.114997+00:00",
+    "updated_at": "2025-09-04T21:43:15.356565+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-05T21:42:17.114061+00:00",
+    "status": "failed",
+    "last_message": "Jenkins hata: 500 - \n  \n  <!DOCTYPE html><html><head resURL=\"/static/9c39b115\" data-rooturl=\"\" data-resurl=\"/static/9c39b115\" data-extensions-available=\"true\" data-unit-test=\"false\" data-imagesurl=\"/static/9c39b115/image",
+    "public_ip": "13.37.116.114"
+  },
+  {
+    "env_name": "erdem-2",
+    "created_at": "2025-09-05T06:58:11.774906+00:00",
+    "updated_at": "2025-09-05T06:59:12.147698+00:00",
+    "template": "web",
+    "size": "small",
+    "expires_at": "2025-09-06T06:58:11.774098+00:00",
+    "status": "running",
+    "last_message": "Jenkins \u00e7al\u0131\u015f\u0131yor (IP: 13.39.122.210)",
+    "public_ip": "13.39.122.210"
   }
 ]

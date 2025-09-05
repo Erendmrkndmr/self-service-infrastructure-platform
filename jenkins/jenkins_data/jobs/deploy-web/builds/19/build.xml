@@ -1,0 +1,167 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-build plugin="workflow-job@1540.v295eccc9778f">
+  <actions>
+    <hudson.model.ParametersAction>
+      <safeParameters class="sorted-set"/>
+      <parameters>
+        <hudson.model.StringParameterValue>
+          <name>HOST_IP</name>
+          <description>Target host IP (Terraform output)</description>
+          <value>13.39.122.210</value>
+        </hudson.model.StringParameterValue>
+        <hudson.model.StringParameterValue>
+          <name>ENVIRONMENT</name>
+          <description>Deployment environment</description>
+          <value>erdem-2</value>
+        </hudson.model.StringParameterValue>
+        <hudson.model.StringParameterValue>
+          <name>USERNAME</name>
+          <description>User who triggered provisioning</description>
+          <value>self-service-portal</value>
+        </hudson.model.StringParameterValue>
+        <hudson.model.StringParameterValue>
+          <name>DELETE_AFTER_DAYS</name>
+          <description>Auto delete after X days</description>
+          <value>1</value>
+        </hudson.model.StringParameterValue>
+      </parameters>
+      <parameterDefinitionNames>
+        <string>HOST_IP</string>
+        <string>ENVIRONMENT</string>
+        <string>USERNAME</string>
+        <string>DELETE_AFTER_DAYS</string>
+      </parameterDefinitionNames>
+    </hudson.model.ParametersAction>
+    <hudson.model.CauseAction>
+      <causeBag class="linked-hash-map">
+        <entry>
+          <hudson.model.Cause_-UserIdCause>
+            <userId>admin</userId>
+          </hudson.model.Cause_-UserIdCause>
+          <int>1</int>
+        </entry>
+      </causeBag>
+    </hudson.model.CauseAction>
+    <org.jenkinsci.plugins.workflow.libs.LibrariesAction plugin="pipeline-groovy-lib@752.vdddedf804e72">
+      <libraries/>
+    </org.jenkinsci.plugins.workflow.libs.LibrariesAction>
+    <org.jenkinsci.plugins.workflow.cps.EnvActionImpl plugin="workflow-cps@4183.v94b_6fd39da_c1">
+      <env class="tree-map">
+        <entry>
+          <string>GIT_BRANCH</string>
+          <string>main</string>
+        </entry>
+        <entry>
+          <string>GIT_REPO_URL</string>
+          <string>https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git</string>
+        </entry>
+        <entry>
+          <string>SSH_KEY_PATH</string>
+          <string>/var/jenkins_home/keys/erdemir-paris-key.pem</string>
+        </entry>
+        <entry>
+          <string>SSH_USER</string>
+          <string>ubuntu</string>
+        </entry>
+      </env>
+    </org.jenkinsci.plugins.workflow.cps.EnvActionImpl>
+  </actions>
+  <queueId>12</queueId>
+  <timestamp>1757055559737</timestamp>
+  <startTime>1757055559740</startTime>
+  <result>FAILURE</result>
+  <duration>2776</duration>
+  <charset>UTF-8</charset>
+  <keepLog>false</keepLog>
+  <execution class="org.jenkinsci.plugins.workflow.cps.CpsFlowExecution">
+    <result>FAILURE</result>
+    <script>
+        node {
+          // --- Pipeline çalışırken de parametreleri kalıcı yap
+          properties([parameters([
+            string(name: &quot;HOST_IP&quot;, defaultValue: &quot;&quot;, description: &quot;Target host IP (Terraform output)&quot;),
+            string(name: &quot;ENVIRONMENT&quot;, defaultValue: &quot;test&quot;, description: &quot;Deployment environment&quot;),
+            string(name: &quot;USERNAME&quot;, defaultValue: &quot;user&quot;, description: &quot;User who triggered provisioning&quot;),
+            string(name: &quot;DELETE_AFTER_DAYS&quot;, defaultValue: &quot;3&quot;, description: &quot;Auto delete after X days&quot;)
+          ])])
+
+          env.GIT_REPO_URL = &quot;https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&quot;
+          env.GIT_BRANCH   = &quot;main&quot;
+          env.SSH_USER     = env.SSH_USER ?: &quot;ubuntu&quot;
+          env.SSH_KEY_PATH = env.JENKINS_SSH_KEY_PATH ?: &quot;/var/jenkins_home/keys/erdemir-paris-key.pem&quot;
+
+          stage(&quot;Echo Params &amp; Guard&quot;) {
+            echo &quot;HOST_IP=&quot;
+            echo &quot;ENVIRONMENT=&quot;
+            echo &quot;USERNAME=&quot;
+            echo &quot;DELETE_AFTER_DAYS=&quot;
+
+            if (!params.HOST_IP?.trim()) {
+              error(&quot;HOST_IP parametresi boş. Bu job portal tarafından IP ile tetiklenmeli veya Build with Parameters ile dolu gönderilmelidir.&quot;)
+            }
+          }
+
+          stage(&quot;Clone Repo&quot;) {
+            sh &quot;rm -rf self-service-infrastructure-platform&quot;
+            sh &quot;git clone --branch  &quot;
+          }
+
+          stage(&quot;Prepare Inventory&quot;) {
+            dir(&quot;self-service-infrastructure-platform&quot;) {
+              sh &quot;mkdir -p ansible/inventory&quot;
+              writeFile file: &quot;ansible/inventory/inventory.ini&quot;, text: &quot;&quot;&quot;[web]  ansible_user= ansible_ssh_private_key_file= ansible_ssh_common_args=&apos;-o StrictHostKeyChecking=no&apos; &quot;&quot;&quot;
+              sh &quot;chmod 0644 ansible/inventory/inventory.ini&quot;
+              sh &quot;echo &apos;---- inventory.ini ----&apos;; cat ansible/inventory/inventory.ini&quot;
+            }
+          }
+
+          stage(&quot;Deploy Web&quot;) {
+            dir(&quot;self-service-infrastructure-platform&quot;) {
+              echo &quot;Deploying to environment: &quot;
+              echo &quot;Provisioned by: &quot;
+              echo &quot;Will auto-delete after  days&quot;
+              sh &quot;ansible --version&quot;
+              sh &quot;ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml&quot;
+            }
+          }
+        }
+      </script>
+    <loadedScripts class="linked-hash-map"/>
+    <durabilityHint>MAX_SURVIVABILITY</durabilityHint>
+    <timings class="map">
+      <entry>
+        <string>flowNode</string>
+        <long>85488579</long>
+      </entry>
+      <entry>
+        <string>classLoad</string>
+        <long>368779705</long>
+      </entry>
+      <entry>
+        <string>runQueue</string>
+        <long>975114546</long>
+      </entry>
+      <entry>
+        <string>run</string>
+        <long>712379206</long>
+      </entry>
+      <entry>
+        <string>parse</string>
+        <long>264104000</long>
+      </entry>
+      <entry>
+        <string>saveProgram</string>
+        <long>365571335</long>
+      </entry>
+    </timings>
+    <internalCalls class="sorted-set"/>
+    <sandbox>true</sandbox>
+    <iota>22</iota>
+    <head>1:22</head>
+    <done>true</done>
+    <resumeBlocked>false</resumeBlocked>
+    <storageDir>workflow-completed</storageDir>
+  </execution>
+  <completed>true</completed>
+  <checkouts class="hudson.util.PersistedList"/>
+</flow-build>

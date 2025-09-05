@@ -1,19 +1,16 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job@1540.v295eccc9778f">
-  <actions>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5"/>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5">
-      <jobProperties/>
-      <triggers/>
-      <parameters/>
-      <options/>
-    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
-  </actions>
+  <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>HOST_IP</name>
+          <description>Target host IP (Terraform output)</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>ENVIRONMENT</name>
           <description>Deployment environment</description>
@@ -37,31 +34,56 @@
   </properties>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4183.v94b_6fd39da_c1">
     <script>
-        pipeline {
-          agent any
-          environment {
-            GIT_REPO_URL = &apos;https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&apos;
-            GIT_BRANCH = &apos;main&apos;
-          }
-          stages {
-            stage(&apos;Clone Repo&apos;) {
-              steps {
-                sh &apos;rm -rf self-service-infrastructure-platform&apos;
-                sh &quot;git clone --branch main https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&quot;
-                dir(&apos;self-service-infrastructure-platform&apos;) {
-                  sh &apos;ls -la&apos;
-                }
-              }
+        node {
+          // --- Pipeline çalışırken de parametreleri kalıcı yap
+          properties([parameters([
+            string(name: &quot;HOST_IP&quot;, defaultValue: &quot;&quot;, description: &quot;Target host IP (Terraform output)&quot;),
+            string(name: &quot;ENVIRONMENT&quot;, defaultValue: &quot;test&quot;, description: &quot;Deployment environment&quot;),
+            string(name: &quot;USERNAME&quot;, defaultValue: &quot;user&quot;, description: &quot;User who triggered provisioning&quot;),
+            string(name: &quot;DELETE_AFTER_DAYS&quot;, defaultValue: &quot;3&quot;, description: &quot;Auto delete after X days&quot;)
+          ])])
+
+          // --- REPO sabitlerini lokal değişken olarak tut (boşa düşmez)
+          def GIT_REPO_URL = &quot;https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git&quot;
+          def GIT_BRANCH   = &quot;main&quot;
+
+          // --- SSH ayarları (env&apos;den gelirse kullan, yoksa varsayılan)
+          def SSH_USER     = env.SSH_USER ?: &quot;ubuntu&quot;
+          def SSH_KEY_PATH = env.JENKINS_SSH_KEY_PATH ?: &quot;/var/jenkins_home/keys/erdemir-paris-key.pem&quot;
+
+          stage(&quot;Echo Params &amp; Guard&quot;) {
+            echo &quot;HOST_IP=&quot;
+            echo &quot;ENVIRONMENT=&quot;
+            echo &quot;USERNAME=&quot;
+            echo &quot;DELETE_AFTER_DAYS=&quot;
+            if (!params.HOST_IP?.trim()) {
+              error(&quot;HOST_IP parametresi boş. Bu job portal tarafından IP ile tetiklenmeli veya Build with Parameters ile dolu gönderilmelidir.&quot;)
             }
-            stage(&apos;Deploy Web&apos;) {
-              steps {
-                dir(&apos;self-service-infrastructure-platform&apos;) {
-                  echo &quot;Deploying to environment: &quot;
-                  echo &quot;Provisioned by: &quot;
-                  echo &quot;Will auto-delete after  days&quot;
-                  sh &apos;ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml&apos;
-                }
-              }
+          }
+
+          stage(&quot;Clone Repo&quot;) {
+            sh &quot;&quot;&quot;#!/bin/bash -e
+              rm -rf self-service-infrastructure-platform
+              git clone --branch &quot;&quot; &quot;&quot;
+            &quot;&quot;&quot;
+          }
+
+          stage(&quot;Prepare Inventory&quot;) {
+            dir(&quot;self-service-infrastructure-platform&quot;) {
+              sh &quot;mkdir -p ansible/inventory&quot;
+              writeFile file: &quot;ansible/inventory/inventory.ini&quot;, text: &quot;&quot;&quot;[web]  ansible_user= ansible_ssh_private_key_file= ansible_ssh_common_args=&apos;-o StrictHostKeyChecking=no&apos; &quot;&quot;&quot;
+              sh &quot;chmod 0644 ansible/inventory/inventory.ini&quot;
+              sh &quot;echo &apos;---- inventory.ini ----&apos;; cat ansible/inventory/inventory.ini&quot;
+            }
+          }
+
+          stage(&quot;Deploy Web&quot;) {
+            dir(&quot;self-service-infrastructure-platform&quot;) {
+              echo &quot;Deploying to environment: &quot;
+              echo &quot;Provisioned by: &quot;
+              echo &quot;Will auto-delete after  days&quot;
+              sh &quot;ansible --version&quot;
+              sh &quot;ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml&quot;
             }
           }
         }

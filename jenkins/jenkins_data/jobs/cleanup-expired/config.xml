@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><flow-definition>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <triggers/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
+        <script>
+        node {
+          def GIT_REPO_URL = "https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git"
+          def GIT_BRANCH   = "main"
+
+          stage("Clone Repo") {
+            sh """#!/bin/bash -e
+              rm -rf self-service-infrastructure-platform
+              git clone --branch "" ""
+            """
+          }
+          stage("Destroy Expired") {
+            dir("self-service-infrastructure-platform") {
+              sh "python3 cleanup/expire_cleaner.py"
+            }
+          }
+        }
+      </script>
+        <sandbox>true</sandbox>
+    </definition>
+</flow-definition>

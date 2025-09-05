@@ -2,54 +2,72 @@ jenkins:
   systemMessage: "Welcome to the Self-Service Jenkins Platform!"
   numExecutors: 2
   mode: NORMAL
-
   securityRealm:
     local:
       allowsSignup: false
       users:
         - id: "admin"
           password: "admin"
-
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
-
   crumbIssuer:
     standard:
       excludeClientIPFromCrumb: true
-
   remotingSecurity:
     enabled: true
 
 unclassified:
   location:
     adminAddress: "admin@example.com"
-    url: "http://localhost:8080/"
+    url: "http://localhost:8080/"  # Gerekiyorsa gerçek URL’inle güncelle
 
 jobs:
+  # === DEPLOY-WEB ===
   - script: >
       pipelineJob('deploy-web') {
         parameters {
-          stringParam('ENVIRONMENT', 'test', 'Deployment environment')
-          stringParam('USERNAME', 'user', 'User who triggered provisioning')
-          stringParam('DELETE_AFTER_DAYS', '3', 'Auto delete after X days')
+                string(name: 'HOST_IP', defaultValue: '', description: 'Target host IP (Terraform output)')
+                  string(name: 'ENVIRONMENT', defaultValue: 'test', description: 'Deployment environment')
+                  string(name: 'USERNAME', defaultValue: 'user', description: 'User who triggered provisioning')
+                  string(name: 'DELETE_AFTER_DAYS', defaultValue: '3', description: 'Auto delete after X days')
         }
         definition {
           cps {
-            script("""
+            script('''
               pipeline {
                 agent any
                 environment {
                   GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
-                  GIT_BRANCH = 'main'
+                  GIT_BRANCH   = 'main'
+                  SSH_USER     = 'ubuntu'
+                  SSH_KEY_PATH = "${env.JENKINS_SSH_KEY_PATH ?: '/var/jenkins_home/keys/erdemir-paris-key.pem'}"
                 }
                 stages {
                   stage('Clone Repo') {
                     steps {
                       sh 'rm -rf self-service-infrastructure-platform'
-                      sh "git clone --branch main https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git"
+                      sh "git clone --branch $GIT_BRANCH $GIT_REPO_URL"
+                    }
+                  }
+                  stage('Prepare Inventory') {
+                    steps {
                       dir('self-service-infrastructure-platform') {
-                        sh 'ls -la'
+                        script {
+                          echo "HOST_IP=${params.HOST_IP}"
+                          echo "SSH_USER=${env.SSH_USER ?: 'unset'}"
+                          echo "SSH_KEY_PATH=${env.SSH_KEY_PATH ?: 'unset'}"
+
+                          if (!params.HOST_IP?.trim()) {
+                            error('HOST_IP parametresi boş. Bu job portal tarafından IP ile tetiklenmelidir.')
+                          }
+                          if (!env.SSH_USER?.trim())     { env.SSH_USER = 'ubuntu' }
+                          if (!env.SSH_KEY_PATH?.trim()) { env.SSH_KEY_PATH = '/var/jenkins_home/keys/erdemir-paris-key.pem' }
+
+                          def inv = """[web] ${params.HOST_IP} ansible_user=${env.SSH_USER} ansible_ssh_private_key_file=${env.SSH_KEY_PATH} ansible_ssh_common_args='-o StrictHostKeyChecking=no'"""
+                          writeFile file: 'ansible/inventory/inventory.ini', text: inv
+                        }
+                        sh 'echo "---- inventory.ini ----"; cat ansible/inventory/inventory.ini'
                       }
                     }
                   }
@@ -59,57 +77,115 @@ jobs:
                         echo "Deploying to environment: ${params.ENVIRONMENT}"
                         echo "Provisioned by: ${params.USERNAME}"
                         echo "Will auto-delete after ${params.DELETE_AFTER_DAYS} days"
+                        sh 'ansible --version'
                         sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/web.yml'
                       }
                     }
                   }
                 }
               }
-            """)
+            ''')
             sandbox()
           }
         }
       }
 
+  # === DEPLOY-DB ===
   - script: >
       pipelineJob('deploy-db') {
         parameters {
+          stringParam('HOST_IP', '', 'Target host IP (Terraform output)')
           stringParam('ENVIRONMENT', 'test', 'Deployment environment')
           stringParam('USERNAME', 'user', 'User who triggered provisioning')
           stringParam('DELETE_AFTER_DAYS', '3', 'Auto delete after X days')
         }
         definition {
           cps {
-            script("""
+            script('''
               pipeline {
                 agent any
                 environment {
                   GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
-                  GIT_BRANCH = 'main'
+                  GIT_BRANCH   = 'main'
+                  SSH_USER     = 'ubuntu'
+                  SSH_KEY_PATH = "${env.JENKINS_SSH_KEY_PATH ?: '/var/jenkins_home/keys/erdemir-paris-key.pem'}"
                 }
                 stages {
                   stage('Clone Repo') {
                     steps {
                       sh 'rm -rf self-service-infrastructure-platform'
-                      sh "git clone --branch ${env.GIT_BRANCH} ${env.GIT_REPO_URL}"
+                      sh "git clone --branch $GIT_BRANCH $GIT_REPO_URL"
+                    }
+                  }
+                  stage('Prepare Inventory') {
+                    steps {
                       dir('self-service-infrastructure-platform') {
-                        sh 'ls -la'
+                        script {
+                          echo "HOST_IP=${params.HOST_IP}"
+                          echo "SSH_USER=${env.SSH_USER ?: 'unset'}"
+                          echo "SSH_KEY_PATH=${env.SSH_KEY_PATH ?: 'unset'}"
+
+                          if (!params.HOST_IP?.trim()) {
+                            error('HOST_IP parametresi boş. Bu job portal tarafından IP ile tetiklenmelidir.')
+                          }
+                          if (!env.SSH_USER?.trim())     { env.SSH_USER = 'ubuntu' }
+                          if (!env.SSH_KEY_PATH?.trim()) { env.SSH_KEY_PATH = '/var/jenkins_home/keys/erdemir-paris-key.pem' }
+
+                          def inv = """[web] ${params.HOST_IP} ansible_user=${env.SSH_USER} ansible_ssh_private_key_file=${env.SSH_KEY_PATH} ansible_ssh_common_args='-o StrictHostKeyChecking=no' """
+                          writeFile file: 'ansible/inventory/inventory.ini', text: inv
+                        }
+                        sh 'echo "---- inventory.ini ----"; cat ansible/inventory/inventory.ini'
                       }
                     }
                   }
                   stage('Deploy DB') {
                     steps {
                       dir('self-service-infrastructure-platform') {
-                        echo "Deploying DB to: ${params.ENVIRONMENT}"
-                        echo "Provisioned by: ${params.USERNAME}"
-                        echo "Will auto-delete after ${params.DELETE_AFTER_DAYS} days"
+                        sh 'ansible --version'
                         sh 'ansible-playbook -i ansible/inventory/inventory.ini ansible/playbooks/db.yml'
                       }
                     }
                   }
                 }
               }
-            """)
+            ''')
+            sandbox()
+          }
+        }
+      }
+
+  # === CLEANUP (TTL) ===
+  - script: >
+      pipelineJob('cleanup-expired') {
+        definition {
+          cps {
+            script('''
+              pipeline {
+                agent any
+                environment {
+                  GIT_REPO_URL = 'https://github.com/Erendmrkndmr/self-service-infrastructure-platform.git'
+                  GIT_BRANCH   = 'main'
+                }
+                triggers {
+                  cron('H/15 * * * *')
+                }
+                stages {
+                  stage('Clone Repo') {
+                    steps {
+                      sh 'rm -rf self-service-infrastructure-platform'
+                      sh "git clone --branch $GIT_BRANCH $GIT_REPO_URL"
+                    }
+                  }
+                  stage('Destroy Expired') {
+                    steps {
+                      dir('self-service-infrastructure-platform') {
+                        sh 'python3 cleanup/expire_cleaner.py'
+                      }
+                    }
+                  }
+                }
+              }
+            ''')
             sandbox()
           }
         }
